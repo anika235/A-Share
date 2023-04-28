@@ -41,12 +41,14 @@ def Send():
 
 
 def Receive():
-    main = Toplevel(root)
+    for widget in root.winfo_children():
+        widget.destroy()
+    
     host=socket.gethostname()
-    main.title(host)
-    main.geometry('450x660+500+200')
-    main.configure(bg="#f4fdfe")
-    main.resizable(False, False)
+    root.title(host)
+    root.geometry('450x660+500+200')
+    root.configure(bg="#f4fdfe")
+    root.resizable(False, False)
 
     def receiver():
         ID= SenderID.get()
@@ -70,27 +72,27 @@ def Receive():
 
     #icon
     image_icon1=PhotoImage(file="images/recieve.png")
-    main.iconphoto(False, image_icon1)
+    root.iconphoto(False, image_icon1)
 
     Hbackground = PhotoImage(file="images/sss.png")
-    Label(main,image=Hbackground).place(x=-2,y=0)
+    Label(root,image=Hbackground).place(x=-2,y=0)
 
     logo=PhotoImage(file='images/pro.png')
-    Label(main,image=logo,bg="#f4fdfe").place(x=80,y=270)
+    Label(root,image=logo,bg="#f4fdfe").place(x=80,y=270)
 
     host=socket.gethostname()
-    Label(main,text=f'ID: {host}',font='arial 14',bg='white',fg='black').place(x=170,y=300)
+    Label(root,text=f'ID: {host}',font='arial 14',bg='white',fg='black').place(x=170,y=300)
 
-    Label(main,text="Write a message:",font=('arial',10,'bold'),bg="#f4fdfe").place(x=20,y=390)
-    incoming_file = Entry(main,width=25,fg="black",border=2,bg='white',font=('arial',15))
+    Label(root,text="Write a message:",font=('arial',10,'bold'),bg="#f4fdfe").place(x=20,y=390)
+    incoming_file = Entry(root,width=25,fg="black",border=2,bg='white',font=('arial',15))
     incoming_file.place(x=20,y=420)
 
 
-    Button(main,text="+ file",width=8,height=1,font='arial 14 bold',bg="#fff",fg="#581845",command=select_file).place(x=310,y=420)
-    Button(main,text="SEND",width=8,height=1,font='arial 14 bold',bg="#581845",fg="#fff",command=receiver).place(x=150,y=480)
+    Button(root,text="+ file",width=8,height=1,font='arial 14 bold',bg="#fff",fg="#581845",command=select_file).place(x=310,y=420)
+    Button(root,text="SEND",width=8,height=1,font='arial 14 bold',bg="#581845",fg="#fff",command=receiver).place(x=150,y=480)
     
 
-    main.mainloop() 
+    root.mainloop() 
 
 #icon
 image_icon= PhotoImage(file="images/icon.png")
