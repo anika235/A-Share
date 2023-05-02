@@ -1,15 +1,67 @@
 from tkinter import * 
 from tkinter import filedialog
 from tkinter import messagebox
-
+import threading
+import time
 import socket
 import os
+import ipaddress
+import struct
 
+
+window_list = []
+online_friends = []
+PORT = 8080
+HOST_NAME = socket.gethostname()
+IP = socket.gethostbyname(HOST_NAME)
+BROADCAST_ADDR = ipaddress.ip_network(IP + "/24", strict=False).broadcast_address
+print(BROADCAST_ADDR)
+ADDR = (IP, PORT)
 root = Tk()
-root.title("A-Share")
-root.geometry("450x660+500+200")
-root.configure(bg="#f4fdfe")
-root.resizable(False,False)
+SIZE = 1024
+FORMAT = "utf-8"
+
+def make_file_name(file_name):
+    
+    name , extension = file_name.split(".")
+    
+    num = 1
+    while os.path.exists(name):
+        name = f'{name}_{num}'
+        num += 1
+    return name + "." + extension
+
+def handle_client(conn, addr):
+    print(f"[NEW CONNECTION] {addr} connected.")
+    
+    data = conn.recv(SIZE).decode(FORMAT)
+    file_name , file_size = data.split(" ")
+    file_size = int(file_size)
+    file_name = make_file_name(file_name)
+    
+    with open(file_name, "w") as f:
+        while True:
+            data = conn.recv(SIZE).decode(FORMAT)
+            if not data:
+                break
+            f.write(data)
+            conn.send("Data received.".encode(FORMAT))
+    
+    print(f"[DISCONNECTED] {addr} disconnected")
+    conn.close()
+    
+def handle_recv():
+    print("[STARTING] Server is starting")
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind(ADDR)
+    server.listen()
+    print(f"[LISTENING] Server is listening on {IP}:{PORT}.")
+
+    while True:
+        conn, addr = server.accept()
+        thread = threading.Thread(target=handle_client, args=(conn, addr))
+        thread.start()
+        print(f"[ACTIVE CONNECTIONS] {threading.activeCount() - 1}")
 
 def Send():
     window = Toplevel(window)
@@ -94,22 +146,99 @@ def Receive():
 
     root.mainloop() 
 
-#icon
-image_icon= PhotoImage(file="images/icon.png")
-root.iconphoto(False,image_icon)
+def broad_cast_your_presence():
+    # Broadcast the IP address to all devices on the local network
+    port = 12345
 
-Label(root, text="Share Your Heart", font=('Acumin Variable Concept',20,'bold'),bg="#f4fdfe").place(x=20,y=30)
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        msg = HOST_NAME + " " + IP + " " + str(PORT)
+        s.sendto(msg.encode(), (BROADCAST_ADDR, port))
+        print("Sent IP address:", msg)
 
-Frame(root, width=30, height=2, bg="#f3f5f6").place(x=25,y=80)
+def check_online():
+    
+    #check who is online
+    start_timer = time.time() + 10
+    while True:
+        if time.time() - start_timer > 5:
+            start_timer = time.time()
+            broad_cast_your_presence_thread = threading.Thread(target=broad_cast_your_presence)
+            broad_cast_your_presence_thread.start()
+            #check online   
+            
+def check_if_any_friend_is_still_online():
+    start_time = time.time()
+    while True:
+        if time.time()-start_time>5:
+            start_time = time.time()
+            tmp_problem = []
+            for friend in online_friends: 
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                try:
+                    s.connect(online_friends[friend])
+                    s.close()
+                except:
+                    s.close()
+                    tmp_problem.append(friend)
+            for friend in tmp_problem:
+                del online_friends[friend]
+        
+def check_broadcast_messages():
+    
+    while True:
+        ip_address = "0.0.0.0"  # Listen on all available network interfaces
+        port = 12345
 
-receive_image = PhotoImage(file="images/recieve.png")
-receive = Button(root, image=receive_image, bg="#f4fdfe",bd=0,command=Receive)
-receive.place(x=250, y=100)
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            s.bind((ip_address, port))
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
-#label
-Label(root,text="Receive", font=('Acumin Variable Concept',16,'bold'),bg="#f4fdfe").place(x=250,y=170)
+            # Wait for a message and print it
+            print("Waiting for message...")
+            while True:
+                data, addr = s.recvfrom(1024)
+                message = data.decode()
+                tmp_name , tmp_ip , tmp_port = message.split(" ")
+                online_friends[tmp_name] = (tmp_ip , int(tmp_port))
+                print("Received message from {}: {}".format(addr, message))
 
-background=PhotoImage(file="images/background.png")
-Label(root, image=background).place(x=-2, y=300)
+def main():
+    
+    check_online_thread = threading.Thread(target=check_online)
+    check_online_thread.start()
+    
+    check_broadcast_messages_thread = threading.Thread(target=check_broadcast_messages)
+    check_broadcast_messages_thread.start()
+    
+    check_if_any_friend_is_still_online_thread = threading.Thread(target=check_if_any_friend_is_still_online)
+    check_if_any_friend_is_still_online_thread.start()
+    
+    root = Tk()
+    root.title("A-Share")
+    root.geometry("450x660+500+200")
+    root.configure(bg="#f4fdfe")
+    root.resizable(False,False)
+    #icon
+    image_icon= PhotoImage(file="images/icon.png")
+    root.iconphoto(False,image_icon)
 
-root.mainloop()
+    Label(root, text="Share Your Heart", font=('Acumin Variable Concept',20,'bold'),bg="#f4fdfe").place(x=20,y=30)
+
+    Frame(root, width=30, height=2, bg="#f3f5f6").place(x=25,y=80)
+
+    receive_image = PhotoImage(file="images/recieve.png")
+    receive = Button(root, image=receive_image, bg="#f4fdfe",bd=0,command=Receive)
+    receive.place(x=250, y=100)
+
+    #label
+    Label(root,text="Receive", font=('Acumin Variable Concept',16,'bold'),bg="#f4fdfe").place(x=250,y=170)
+
+    background=PhotoImage(file="images/background.png")
+    Label(root, image=background).place(x=-2, y=300)
+
+    root.mainloop()
+
+if __name__ == "__main__":
+    main()
