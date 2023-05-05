@@ -1,6 +1,7 @@
 from tkinter import * 
 from tkinter import filedialog
 from tkinter import messagebox
+import tkinter as tk
 import threading
 import time
 import socket
@@ -9,23 +10,26 @@ import ipaddress
 import struct
 
 
-window_list = []
-online_friends = []
+window_list = {}
+online_friends = {}
 PORT = 8080
 HOST_NAME = socket.gethostname()
 IP = socket.gethostbyname(HOST_NAME)
-BROADCAST_ADDR = ipaddress.ip_network(IP + "/24", strict=False).broadcast_address
+BROADCAST_ADDR = str(ipaddress.ip_network(IP + "/24", strict=False).broadcast_address)
 print(BROADCAST_ADDR)
 ADDR = (IP, PORT)
-root = Tk()
+WINDOW_SIZE = "450x660+500+200"
 SIZE = 1024
 FORMAT = "utf-8"
+is_first_page_on = True
+
+root = Tk()
+
 
 def make_file_name(file_name):
     
     name , extension = file_name.split(".")
     
-    num = 1
     while os.path.exists(name):
         name = f'{name}_{num}'
         num += 1
@@ -92,13 +96,21 @@ def Send():
 
 
 
-def Receive():
+def Call_Second_Page(name):
+    is_first_page_on = False
     for widget in root.winfo_children():
         widget.destroy()
     
+    root.geometry(WINDOW_SIZE)
+
+    scrollbar = tk.Scrollbar(root)
+    scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+    global listbox
+    listbox = tk.Listbox(root, yscrollcommand=scrollbar.set)
+    listbox.pack(side=tk.LEFT, fill=tk.BOTH)
     host=socket.gethostname()
     root.title(host)
-    root.geometry('450x660+500+200')
+    root.geometry(WINDOW_SIZE)
     root.configure(bg="#f4fdfe")
     root.resizable(False, False)
 
@@ -142,7 +154,7 @@ def Receive():
 
     Button(root,text="+ file",width=8,height=1,font='arial 14 bold',bg="#fff",fg="#581845",command=select_file).place(x=310,y=420)
     Button(root,text="SEND",width=8,height=1,font='arial 14 bold',bg="#581845",fg="#fff",command=receiver).place(x=150,y=480)
-    
+    Button(root,text="Back",width=8,height=1,font='arial 14 bold',bg="#fff",fg="#581845",command=call_first_page).place(x=310,y=520)
 
     root.mainloop() 
 
@@ -183,6 +195,16 @@ def check_if_any_friend_is_still_online():
                     tmp_problem.append(friend)
             for friend in tmp_problem:
                 del online_friends[friend]
+            print(online_friends)
+            if not is_first_page_on:
+                continue
+            while listbox.size()>0:
+                listbox.delete(0)
+            for name in online_friends:
+                button_name = name
+                button = tk.Button(root, text=button_name, command=lambda name=button_name: Call_Second_Page(name))
+                button.pack(padx=10, pady=5)
+                listbox.insert(tk.END, button)
         
 def check_broadcast_messages():
     
@@ -203,6 +225,37 @@ def check_broadcast_messages():
                 tmp_name , tmp_ip , tmp_port = message.split(" ")
                 online_friends[tmp_name] = (tmp_ip , int(tmp_port))
                 print("Received message from {}: {}".format(addr, message))
+                
+
+def call_first_page():
+    
+    is_first_page_on = True
+    
+    for widget in root.winfo_children():
+        widget.destroy()
+        
+    root.title("A-Share")
+    root.geometry(WINDOW_SIZE)
+    root.configure(bg="#f4fdfe")
+    root.resizable(False,False)
+    #icon
+    image_icon= PhotoImage(file="images/icon.png")
+    root.iconphoto(False,image_icon)
+
+    Label(root, text="Share Your Heart", font=('Acumin Variable Concept',20,'bold'),bg="#f4fdfe").place(x=20,y=30)
+
+    Frame(root, width=30, height=2, bg="#f3f5f6").place(x=25,y=80)
+
+    # receive_image = PhotoImage(file="images/recieve.png")
+    # receive = Button(root, image=receive_image, bg="#f4fdfe",bd=0,command=Receive)
+    # receive.place(x=250, y=100)
+
+    #label
+    Label(root,text="Receive", font=('Acumin Variable Concept',16,'bold'),bg="#f4fdfe").place(x=250,y=170)
+
+    background=PhotoImage(file="images/background.png")
+    Label(root, image=background).place(x=-2, y=300)
+    root.mainloop()    
 
 def main():
     
@@ -215,30 +268,8 @@ def main():
     check_if_any_friend_is_still_online_thread = threading.Thread(target=check_if_any_friend_is_still_online)
     check_if_any_friend_is_still_online_thread.start()
     
-    root = Tk()
-    root.title("A-Share")
-    root.geometry("450x660+500+200")
-    root.configure(bg="#f4fdfe")
-    root.resizable(False,False)
-    #icon
-    image_icon= PhotoImage(file="images/icon.png")
-    root.iconphoto(False,image_icon)
-
-    Label(root, text="Share Your Heart", font=('Acumin Variable Concept',20,'bold'),bg="#f4fdfe").place(x=20,y=30)
-
-    Frame(root, width=30, height=2, bg="#f3f5f6").place(x=25,y=80)
-
-    receive_image = PhotoImage(file="images/recieve.png")
-    receive = Button(root, image=receive_image, bg="#f4fdfe",bd=0,command=Receive)
-    receive.place(x=250, y=100)
-
-    #label
-    Label(root,text="Receive", font=('Acumin Variable Concept',16,'bold'),bg="#f4fdfe").place(x=250,y=170)
-
-    background=PhotoImage(file="images/background.png")
-    Label(root, image=background).place(x=-2, y=300)
-
-    root.mainloop()
+    call_first_page()
+    
 
 if __name__ == "__main__":
     main()
