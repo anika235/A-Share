@@ -11,62 +11,82 @@ import struct
 from tkinter import ttk
 
 class ListFrame(ttk.Frame):
-	def __init__(self, parent, text_data, item_height):
-		super().__init__(master = parent)
-		self.pack(expand = True, fill = 'both')
+    def __init__(self, parent, text_data, item_height):
+        super().__init__(master=parent)
+        self.pack(expand=True, fill='both')
 
-		# widget data
-		self.text_data = text_data
-		self.item_number = len(text_data)
-		self.list_height = self.item_number * item_height
+        # widget data
+        self.text_data = text_data
+        self.item_number = len(text_data)
+        self.item_height = item_height
+        self.list_height = self.item_number * item_height
 
-		# canvas 
-		self.canvas = tk.Canvas(self, background = 'red', scrollregion = (0,0,self.winfo_width(),self.list_height))
-		self.canvas.pack(expand = True, fill = 'both')
+        # canvas 
+        self.canvas = tk.Canvas(self, background='red', scrollregion=(0,0,self.winfo_width(),self.list_height))
+        self.canvas.pack(expand=True, fill='both')
 
-		# display frame
-		self.frame = ttk.Frame(self)
-		
-		for index, item in enumerate(self.text_data):
-			self.create_item(index, item).pack(expand = True, fill = 'both', pady =  4, padx = 10)
+        # display frame
+        self.frame = ttk.Frame(self)
+        
+        for index, item in enumerate(self.text_data):
+            self.create_item(index, item).pack(expand=True, fill='both', pady=4, padx=10)
 
-		# scrollbar 
-		self.scrollbar = ttk.Scrollbar(self, orient = 'vertical', command = self.canvas.yview)
-		self.canvas.configure(yscrollcommand = self.scrollbar.set)
-		self.scrollbar.place(relx = 1, rely = 0, relheight = 1, anchor = 'ne')
+        # scrollbar 
+        self.scrollbar = ttk.Scrollbar(self, orient='vertical', command=self.canvas.yview)
+        self.canvas.configure(yscrollcommand=self.scrollbar.set)
+        self.scrollbar.place(relx=1, rely=0, relheight=1, anchor='ne')
 
-		# events
-		self.canvas.bind_all('<MouseWheel>', lambda event: self.canvas.yview_scroll(-int(event.delta / 60), "units"))
-		self.bind('<Configure>', self.update_size)
+        # events
+        self.canvas.bind_all('<MouseWheel>', lambda event: self.canvas.yview_scroll(-int(event.delta / 60), "units"))
+        self.bind('<Configure>', self.update_size)
 
-	def update_size(self, event):
-		if self.list_height >= self.winfo_height():
-			height = self.list_height
-			self.canvas.bind_all('<MouseWheel>', lambda event: self.canvas.yview_scroll(-int(event.delta / 60), "units"))
-			self.scrollbar.place(relx = 1, rely = 0, relheight = 1, anchor = 'ne')
-		else:
-			height = self.winfo_height()
-			self.canvas.unbind_all('<MouseWheel>')
-			self.scrollbar.place_forget()
-		
-		self.canvas.create_window(
-			(0,0), 
-			window = self.frame, 
-			anchor = 'nw', 
-			width = self.winfo_width(), 
-			height = height)
+    def update_size(self, event):
+        if self.list_height >= self.winfo_height():
+            height = self.list_height
+            self.canvas.bind_all('<MouseWheel>', lambda event: self.canvas.yview_scroll(-int(event.delta / 60), "units"))
+            self.scrollbar.place(relx=1, rely=0, relheight=1, anchor='ne')
+        else:
+            height = self.winfo_height()
+            self.canvas.unbind_all('<MouseWheel>')
+            self.scrollbar.place_forget()
+        
+        self.canvas.create_window(
+            (0,0), 
+            window=self.frame, 
+            anchor='nw', 
+            width=self.winfo_width(), 
+            height=height)
 
-	def create_item(self, index, item):
-		frame = ttk.Frame(self.frame)
+    def create_item(self, index, item):
+        frame = ttk.Frame(self.frame)
 
-		# grid layout
-		frame.rowconfigure(0, weight = 2)
-		frame.columnconfigure((0,1,2,3,4), weight = 1, uniform = 'a')
+        # grid layout
+        frame.rowconfigure(0, weight=2)
+        frame.columnconfigure((0,1,2,3,4), weight=1, uniform='a')
 
-		# widgets 
-		ttk.Button(frame, text = f'{item[1]}').grid(row = 0, column = 0, columnspan = 5, sticky = 'nsew')
+        # widgets 
+        ttk.Button(frame, text=f'{item[1]}').grid(row=0, column=0, columnspan=5, sticky='nsew')
 
-		return frame
+        return frame
+
+    def update_list(self, text_data):
+        # new code for update_list function here
+        self.text_data = text_data
+        self.item_number = len(text_data)
+        self.list_height = self.item_number * self.item_height
+
+        # clear existing items in the frame
+        for widget in self.frame.winfo_children():
+            widget.destroy()
+
+        # add new items to the frame
+        for index, item in enumerate(self.text_data):
+            self.create_item(index, item).pack(expand=True, fill='both', pady=4, padx=10)
+
+        # update the scroll region and window size
+        self.canvas.config(scrollregion=(0, 0, self.winfo_width(), self.list_height))
+        self.update_size(None)
+
 
 
 window_list = {}
@@ -258,13 +278,12 @@ def check_if_any_friend_is_still_online():
             print(online_friends)
             if not is_first_page_on:
                 continue
-            while listbox.size()>0:
-                listbox.delete(0)
+            
+            tmp_list = []
             for name in online_friends:
-                button_name = name
-                button = tk.Button(root, text=button_name, command=lambda name=button_name: Call_Second_Page(name))
-                button.pack(padx=10, pady=5)
-                listbox.insert(tk.END, button)
+                tmp_list.append((name, name))
+            tmp_list.append(("Add Friend", "Add friend"))
+            list_frame.update_list(tmp_list)
         
 def check_broadcast_messages():
     
@@ -311,6 +330,7 @@ def call_first_page():
     background=PhotoImage(file="images/background.png")
     Label(root, image=background).place(x=-2, y=300)
     text_list = [('label', 'button'),('thing', 'click'),('third', 'something'),('label1', 'button'),('label2', 'button'),('label3', 'button'),('label4', 'button')]
+    global list_frame
     list_frame = ListFrame(root, text_list, 100)
     list_frame.pack(side='right', fill='x', expand=False , anchor='nw')
     root.mainloop()    
