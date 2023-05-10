@@ -65,8 +65,11 @@ class ListFrame(ttk.Frame):
         frame.columnconfigure((0,1,2,3,4), weight=1, uniform='a')
 
         # widgets 
-        ttk.Button(frame, text=f'{item[1]}').grid(row=0, column=0, columnspan=5, sticky='nsew')
-
+        print(f'is first page on = {is_first_page_on}')
+        if item[0]=='button':
+            ttk.Button(frame, text=f'{item[1]}' , command= lambda : Call_Second_Page(item[1])).grid(row=0, column=0, columnspan=5, sticky='nsew')
+        else:
+            ttk.Label(frame, text=f'{item[1]}').grid(row=0, column=0, columnspan=5, sticky='nsew')
         return frame
 
     def update_list(self, text_data):
@@ -91,6 +94,7 @@ class ListFrame(ttk.Frame):
 
 window_list = {}
 online_friends = {} #online_friends[name]  = (IP , PORT)
+messagebox = {}
 PORT = 8080
 HOST_NAME = socket.gethostname()
 IP = socket.gethostbyname(HOST_NAME)
@@ -100,7 +104,9 @@ ADDR = (IP, PORT)
 WINDOW_SIZE = "660x660+500+200"
 SIZE = 1024
 FORMAT = "utf-8"
+global is_first_page_on
 is_first_page_on = True
+SERVER_DATA_PATH = "received_files"
 
 root = Tk()
 
@@ -175,45 +181,53 @@ def Send():
 
 
 
-def Call_Second_Page():
-    is_first_page_on = False
+def Call_Second_Page(Cur_name):
+    print(Cur_name)
     for widget in root.winfo_children():
         widget.destroy()
-    
-    root.geometry(WINDOW_SIZE)
 
-    #scrollbar = tk.Scrollbar(root)
-    #scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-    global listbox
-    #listbox = tk.Listbox(root, yscrollcommand=scrollbar.set)
-    #listbox.pack(side=tk.LEFT, fill=tk.BOTH)
     host=socket.gethostname()
     root.title(host)
     root.geometry(WINDOW_SIZE)
     root.configure(bg="#f4fdfe")
     root.resizable(False, False)
-    text_list = [('label', 'button'),('thing', 'click'),('third', 'something'),('label1', 'button'),('label2', 'button'),('label3', 'button'),('label4', 'button')]
+    text_list = []
     list_frame = ListFrame(root, text_list, 50)
     list_frame.place(x=0, y=230)
 
-    def receiver():
-        ID= SenderID.get()
-        filename1=incoming_file.get()
-
-        s=socket.socket()
-        port=8080
-        s.connect((ID,port))
-        file=open(filename1,'wb')
-        file_data= s.recv(1024)
-        file.write(file_data)
-        file.close()
-        print("File has been received successfully")
+    def Send_Msg(cur_name , msg):
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.connect(online_friends[cur_name])
+        server.send(f'msg@{msg}'.encode(FORMAT)).timeout(10)
+        server.close()
+        if(cur_name not in messagebox):
+            messagebox[cur_name] = []
+        messagebox[cur_name].append(('label',f'You: {msg}'))
+        list_frame.update_list(messagebox[cur_name])
     
-    def select_file():
-        global filename
-        filename= filedialog.askopenfilename(initialdir=os.getcwd(),
+    def select_file(cur_name):
+        # global filename
+        filename = filedialog.askopenfilename(initialdir=os.getcwd(),
                                             title='Select Image File',
                                             filetype=(('file_type','*.txt'),('all files','*.*')))
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.connect(online_friends[Cur_name])
+        name_of_the_file = filename.split("/")[-1]
+        server.send(f"file@{name_of_the_file}".encode(FORMAT))
+        
+        with open(filename, "r") as f:
+            while True:
+                data = f.read(SIZE)
+                if not data : 
+                    break
+                server.send(data.encode(FORMAT))
+                server.recv(SIZE).decode(FORMAT)
+        server.close()
+        if(cur_name not in messagebox):
+            messagebox[cur_name] = []
+        messagebox[cur_name].append(('label',f'You: {name_of_the_file} file is sent'))
+        list_frame.update_list(messagebox[cur_name])
+        print("File has been sent successfully")
 
 
     #icon
@@ -232,8 +246,8 @@ def Call_Second_Page():
     incoming_file.place(x=400,y=370)
 
 
-    Button(root,text="+ file",width=8,height=1,font='arial 14 bold',bg="#fff",fg="#581845",command=select_file).place(x=530,y=440)
-    Button(root,text="SEND",width=8,height=1,font='arial 14 bold',bg="#581845",fg="#fff",command=receiver).place(x=400,y=440)
+    Button(root,text="+ file",width=8,height=1,font='arial 14 bold',bg="#fff",fg="#581845",command=lambda:select_file(Cur_name)).place(x=530,y=440)
+    Button(root,text="SEND",width=8,height=1,font='arial 14 bold',bg="#581845",fg="#fff",command=lambda : Send_Msg(Cur_name,incoming_file.get())).place(x=400,y=440)
     Button(root,text="Back",width=8,height=1,font='arial 14 bold',bg="#fff",fg="#581845",command=call_first_page).place(x=470,y=510)
 
     root.mainloop() 
@@ -261,7 +275,7 @@ def check_online():
             
 def check_if_any_friend_is_still_online():
     start_time = time.time()
-    while True:
+    while is_first_page_on:
         if time.time()-start_time>5:
             start_time = time.time()
             tmp_problem = []
@@ -276,13 +290,10 @@ def check_if_any_friend_is_still_online():
             for friend in tmp_problem:
                 del online_friends[friend]
             print(online_friends)
-            if not is_first_page_on:
-                continue
             
             tmp_list = []
             for name in online_friends:
-                tmp_list.append((name, name))
-            tmp_list.append(("Add Friend", "Add friend"))
+                tmp_list.append(('button',name))
             list_frame.update_list(tmp_list)
         
 def check_broadcast_messages():
@@ -308,11 +319,13 @@ def check_broadcast_messages():
 
 def call_first_page():
     
-    is_first_page_on = True
     
     for widget in root.winfo_children():
         widget.destroy()
         
+    check_if_any_friend_is_still_online_thread = threading.Thread(target=check_if_any_friend_is_still_online)
+    check_if_any_friend_is_still_online_thread.start()
+    
     root.title("A-Share")
     root.geometry(WINDOW_SIZE)
     root.configure(bg="#f4fdfe")
@@ -323,17 +336,62 @@ def call_first_page():
     Label(root, text="Share Your Heart", font=('Acumin Variable Concept',20,'bold'),bg="#f4fdfe").place(x=20,y=50)
     
     receive_image = PhotoImage(file="images/recieve.png")
-    receive = Button(root, image=receive_image, bg="#f4fdfe",bd=0, command=Call_Second_Page)
-    receive.place(x=80, y=100)
+    Label(root, image=receive_image, bg="#f4fdfe").place(x=80, y=100)
 
 
     background=PhotoImage(file="images/background.png")
     Label(root, image=background).place(x=-2, y=300)
-    text_list = [('label', 'button'),('thing', 'click'),('third', 'something'),('label1', 'button'),('label2', 'button'),('label3', 'button'),('label4', 'button')]
+    text_list = []
     global list_frame
     list_frame = ListFrame(root, text_list, 100)
     list_frame.pack(side='right', fill='x', expand=False , anchor='nw')
     root.mainloop()    
+
+def handle_client(conn, addr):
+    print(f"[NEW CONNECTION] {addr} connected.")
+    conn.send("OK@Welcome to the File Server.".encode(FORMAT))
+    
+    data = conn.recv(SIZE).decode(FORMAT)
+    data = data.split("@")
+    if(data[0]=='msg'):
+        for friend in online_friends:
+            if(online_friends[friend]==addr):
+                messagebox[friend].append(('label',f'{friend} : {data[1]}'))
+                break
+    else:
+        filename = data[1]
+        filename = make_file_name(filename)
+        filepath = os.path.join(SERVER_DATA_PATH, filename)
+        with open(filename, "w") as f:
+            while True:
+                data = conn.recv(SIZE).decode(FORMAT)
+    
+                if not data:
+                    break
+    
+                f.write(data)
+                conn.send("Data received.".encode(FORMAT))
+                
+        if(online_friends[friend]==addr):
+                messagebox[friend].append(('label',f'{friend} : {filename} is received'))
+
+    print(f"[DISCONNECTED] {addr} disconnected")
+    conn.close()
+
+
+def server_handler():
+    print("[STARTING] Server is starting")
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind(ADDR)
+    server.listen()
+    print(f"[LISTENING] Server is listening on {IP}:{PORT}.")
+
+    while True:
+        conn, addr = server.accept()
+        thread = threading.Thread(target=handle_client, args=(conn, addr))
+        thread.start()
+
+
 
 def main():
     
@@ -343,11 +401,12 @@ def main():
     check_broadcast_messages_thread = threading.Thread(target=check_broadcast_messages)
     check_broadcast_messages_thread.start()
     
-    check_if_any_friend_is_still_online_thread = threading.Thread(target=check_if_any_friend_is_still_online)
-    check_if_any_friend_is_still_online_thread.start()
+    server_handler_thread = threading.Thread(target=server_handler)
+    server_handler_thread.start()
     
     call_first_page()
     
 
 if __name__ == "__main__":
     main()
+    
