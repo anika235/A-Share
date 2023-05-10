@@ -60,13 +60,11 @@ class ListFrame(ttk.Frame):
 		frame = ttk.Frame(self.frame)
 
 		# grid layout
-		frame.rowconfigure(0, weight = 1)
+		frame.rowconfigure(0, weight = 2)
 		frame.columnconfigure((0,1,2,3,4), weight = 1, uniform = 'a')
 
 		# widgets 
-		ttk.Label(frame, text = f'#{index}').grid(row = 0, column = 0)
-		ttk.Label(frame, text = f'{item[0]}').grid(row = 0, column = 1)
-		ttk.Button(frame, text = f'{item[1]}').grid(row = 0, column = 2, columnspan = 3, sticky = 'nsew')
+		ttk.Button(frame, text = f'{item[1]}').grid(row = 0, column = 0, columnspan = 5, sticky = 'nsew')
 
 		return frame
 
@@ -79,7 +77,7 @@ IP = socket.gethostbyname(HOST_NAME)
 BROADCAST_ADDR = str(ipaddress.ip_network(IP + "/24", strict=False).broadcast_address)
 print(BROADCAST_ADDR)
 ADDR = (IP, PORT)
-WINDOW_SIZE = "450x660+500+200"
+WINDOW_SIZE = "660x660+500+200"
 SIZE = 1024
 FORMAT = "utf-8"
 is_first_page_on = True
@@ -157,23 +155,26 @@ def Send():
 
 
 
-def Call_Second_Page(name):
+def Call_Second_Page():
     is_first_page_on = False
     for widget in root.winfo_children():
         widget.destroy()
     
     root.geometry(WINDOW_SIZE)
 
-    scrollbar = tk.Scrollbar(root)
-    scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+    #scrollbar = tk.Scrollbar(root)
+    #scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
     global listbox
-    listbox = tk.Listbox(root, yscrollcommand=scrollbar.set)
-    listbox.pack(side=tk.LEFT, fill=tk.BOTH)
+    #listbox = tk.Listbox(root, yscrollcommand=scrollbar.set)
+    #listbox.pack(side=tk.LEFT, fill=tk.BOTH)
     host=socket.gethostname()
     root.title(host)
     root.geometry(WINDOW_SIZE)
     root.configure(bg="#f4fdfe")
     root.resizable(False, False)
+    text_list = [('label', 'button'),('thing', 'click'),('third', 'something'),('label1', 'button'),('label2', 'button'),('label3', 'button'),('label4', 'button')]
+    list_frame = ListFrame(root, text_list, 50)
+    list_frame.place(x=0, y=230)
 
     def receiver():
         ID= SenderID.get()
@@ -202,20 +203,18 @@ def Call_Second_Page(name):
     Hbackground = PhotoImage(file="images/sss.png")
     Label(root,image=Hbackground).place(x=-2,y=0)
 
-    logo=PhotoImage(file='images/pro.png')
-    Label(root,image=logo,bg="#f4fdfe").place(x=80,y=270)
 
     host=socket.gethostname()
-    Label(root,text=f'ID: {host}',font='arial 14',bg='white',fg='black').place(x=170,y=300)
+    Label(root,text=f'ID: {host}',font='arial 14',bg='white',fg='black').place(x=400,y=100)
 
-    Label(root,text="Write a message:",font=('arial',10,'bold'),bg="#f4fdfe").place(x=20,y=390)
-    incoming_file = Entry(root,width=25,fg="black",border=2,bg='white',font=('arial',15))
-    incoming_file.place(x=20,y=420)
+    Label(root,text="Write a message:",font=('arial',10,'bold'),bg="#f4fdfe").place(x=400,y=300)
+    incoming_file = Entry(root,width=20,fg="black",border=2,bg='white',font=('arial',15))
+    incoming_file.place(x=400,y=370)
 
 
-    Button(root,text="+ file",width=8,height=1,font='arial 14 bold',bg="#fff",fg="#581845",command=select_file).place(x=310,y=420)
-    Button(root,text="SEND",width=8,height=1,font='arial 14 bold',bg="#581845",fg="#fff",command=receiver).place(x=150,y=480)
-    Button(root,text="Back",width=8,height=1,font='arial 14 bold',bg="#fff",fg="#581845",command=call_first_page).place(x=310,y=520)
+    Button(root,text="+ file",width=8,height=1,font='arial 14 bold',bg="#fff",fg="#581845",command=select_file).place(x=530,y=440)
+    Button(root,text="SEND",width=8,height=1,font='arial 14 bold',bg="#581845",fg="#fff",command=receiver).place(x=400,y=440)
+    Button(root,text="Back",width=8,height=1,font='arial 14 bold',bg="#fff",fg="#581845",command=call_first_page).place(x=470,y=510)
 
     root.mainloop() 
 
@@ -302,23 +301,18 @@ def call_first_page():
     #icon
     image_icon= PhotoImage(file="images/icon.png")
     root.iconphoto(False,image_icon)
+    Label(root, text="Share Your Heart", font=('Acumin Variable Concept',20,'bold'),bg="#f4fdfe").place(x=20,y=50)
+    
+    receive_image = PhotoImage(file="images/recieve.png")
+    receive = Button(root, image=receive_image, bg="#f4fdfe",bd=0, command=Call_Second_Page)
+    receive.place(x=80, y=100)
 
-    Label(root, text="Share Your Heart", font=('Acumin Variable Concept',20,'bold'),bg="#f4fdfe").place(x=20,y=400)
-
-    Frame(root, width=30, height=2, bg="#f3f5f6").place(x=25,y=80)
-
-    # receive_image = PhotoImage(file="images/recieve.png")
-    # receive = Button(root, image=receive_image, bg="#f4fdfe",bd=0,command=Receive)
-    # receive.place(x=250, y=100)
-
-    #label
-    # Label(root,text="Receive", font=('Acumin Variable Concept',16,'bold'),bg="#f4fdfe").place(x=250,y=170)
 
     background=PhotoImage(file="images/background.png")
     Label(root, image=background).place(x=-2, y=300)
     text_list = [('label', 'button'),('thing', 'click'),('third', 'something'),('label1', 'button'),('label2', 'button'),('label3', 'button'),('label4', 'button')]
     list_frame = ListFrame(root, text_list, 100)
-    list_frame.pack(side='left', fill='x', expand=True , anchor='nw')
+    list_frame.pack(side='right', fill='x', expand=False , anchor='nw')
     root.mainloop()    
 
 def main():
