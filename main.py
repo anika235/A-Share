@@ -198,7 +198,7 @@ def Call_Second_Page(Cur_name):
     def Send_Msg(cur_name , msg):
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server.connect(online_friends[cur_name])
-        server.send(f'msg@{msg}'.encode(FORMAT)).timeout(10)
+        server.send(f'msg@{msg}'.encode(FORMAT))
         server.close()
         if(cur_name not in messagebox):
             messagebox[cur_name] = []
@@ -313,6 +313,8 @@ def check_broadcast_messages():
                 data, addr = s.recvfrom(1024)
                 message = data.decode()
                 tmp_name , tmp_ip , tmp_port = message.split(" ")
+                if tmp_name == HOST_NAME:
+                    continue
                 online_friends[tmp_name] = (tmp_ip , int(tmp_port))
                 print("Received message from {}: {}".format(addr, message))
                 
