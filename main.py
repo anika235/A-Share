@@ -285,6 +285,7 @@ def check_if_any_friend_is_still_online():
                     s.connect(online_friends[friend])
                     msg = "addr"+" "+ HOST_NAME + " " + IP + " " + str(PORT)
                     s.send(msg.encode(FORMAT))
+                    print(f'msg is sent {msg}')
                     s.close()
                 except:
                     s.close()
