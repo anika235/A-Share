@@ -167,7 +167,7 @@ def Call_Second_Page(Cur_name):
         name_of_the_file = filename.split("/")[-1]
         server.send(f"file@{name_of_the_file}".encode(FORMAT))
 
-        with open(filepath, "r") as f:
+        with open(filepath, "rb") as f:
             while True:
                 buff_data = f.read(SIZE)
                 if not buff_data:
@@ -343,7 +343,7 @@ def handle_client(conn, addr):
         filename = data[1]
         filename = make_file_name(filename)
         filepath = os.path.join(SERVER_DATA_PATH, filename)
-        with open(filepath, "w") as f:
+        with open(filepath, "wb") as f:
             while True:
                 got_data = conn.recv(SIZE).decode(FORMAT)
 
