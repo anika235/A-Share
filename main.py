@@ -239,7 +239,7 @@ def Call_Second_Page(Cur_name):
 
 
     host=socket.gethostname()
-    Label(root,text=f'ID: {host}',font='arial 14',bg='white',fg='black').place(x=400,y=100)
+    Label(root,text=f'ID: {Cur_name}',font='arial 14',bg='white',fg='black').place(x=400,y=100)
 
     Label(root,text="Write a message:",font=('arial',10,'bold'),bg="#f4fdfe").place(x=400,y=300)
     incoming_file = Entry(root,width=20,fg="black",border=2,bg='white',font=('arial',15))
@@ -353,9 +353,9 @@ def handle_client(conn, addr):
     print(f"[NEW CONNECTION] {addr} connected.")
     conn.send("OK@Welcome to the File Server.".encode(FORMAT))
     
+    data = conn.recv(SIZE).decode(FORMAT)
     if len(data)==0:
         return
-    data = conn.recv(SIZE).decode(FORMAT)
     data = data.split("@")
     if(data[0]=='msg'):
         for friend in online_friends:
