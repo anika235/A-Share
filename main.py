@@ -283,6 +283,7 @@ def check_if_any_friend_is_still_online():
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 try:
                     s.connect(online_friends[friend])
+                    msg = "addr"+" "+ HOST_NAME + " " + IP + " " + str(PORT)
                     s.close()
                 except:
                     s.close()
@@ -356,7 +357,15 @@ def handle_client(conn, addr):
     data = conn.recv(SIZE).decode(FORMAT)
     if len(data)==0:
         return
+    tmp_Data = data
     data = data.split("@")
+    tmp_Data = data.split(" ")
+    
+    if(tmp_Data[0]=='addr'):
+        online_friends[tmp_Data[1]] = (tmp_Data[2],int(tmp_Data[3]))
+        print(online_friends)
+        return
+    
     if(data[0]=='msg'):
         for friend in online_friends:
             if(online_friends[friend]==addr):
