@@ -343,7 +343,7 @@ def handle_client(conn, addr):
         filename = data[1]
         filename = make_file_name(filename)
         filepath = os.path.join(SERVER_DATA_PATH, filename)
-        with open(filepath, "wb") as f:
+        with open(filepath, "w") as f:
             while True:
                 got_data = conn.recv(SIZE).decode(FORMAT)
 
