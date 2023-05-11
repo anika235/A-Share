@@ -353,6 +353,8 @@ def handle_client(conn, addr):
     print(f"[NEW CONNECTION] {addr} connected.")
     conn.send("OK@Welcome to the File Server.".encode(FORMAT))
     
+    if len(data)==0:
+        return
     data = conn.recv(SIZE).decode(FORMAT)
     data = data.split("@")
     if(data[0]=='msg'):
