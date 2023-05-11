@@ -172,7 +172,7 @@ def Call_Second_Page(Cur_name):
                 buff_data = f.read(SIZE)
                 if not buff_data:
                     break
-                server.send(buff_data.encode(FORMAT))
+                server.send(buff_data)
                 gotmsg = server.recv(SIZE).decode(FORMAT)
                 print(gotmsg)
 
@@ -345,7 +345,7 @@ def handle_client(conn, addr):
         filepath = os.path.join(SERVER_DATA_PATH, filename)
         with open(filepath, "wb") as f:
             while True:
-                got_data = conn.recv(SIZE).decode(FORMAT)
+                got_data = conn.recv(SIZE)
 
                 if not got_data:
                     break
