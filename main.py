@@ -161,12 +161,13 @@ def Call_Second_Page(Cur_name):
         filename = filedialog.askopenfilename(initialdir=os.getcwd(),
                                               title='Select Image File',
                                               filetype=(('file_type', '*.txt'), ('all files', '*.*')))
+        filepath = filename
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server.connect(online_friends[Cur_name])
         name_of_the_file = filename.split("/")[-1]
         server.send(f"file@{name_of_the_file}".encode(FORMAT))
 
-        with open(filename, "r") as f:
+        with open(filepath, "r") as f:
             while True:
                 buff_data = f.read(SIZE)
                 if not buff_data:
@@ -246,7 +247,6 @@ def check_if_any_friend_is_still_online():
                     s.connect(online_friends[friend])
                     msg = "addr"+" " + HOST_NAME + " " + IP + " " + str(PORT)
                     s.send(msg.encode(FORMAT))
-                    print(f'msg is sent {msg}')
                     s.close()
                 except:
                     s.close()
@@ -343,7 +343,7 @@ def handle_client(conn, addr):
         filename = data[1]
         filename = make_file_name(filename)
         filepath = os.path.join(SERVER_DATA_PATH, filename)
-        with open(filename, "wb") as f:
+        with open(filepath, "wb") as f:
             while True:
                 got_data = conn.recv(SIZE).decode(FORMAT)
 
